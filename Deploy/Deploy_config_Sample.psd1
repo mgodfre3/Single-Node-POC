@@ -50,7 +50,7 @@
     
     #########################SET ALL  Azure VARIABLES########################### 
     
-    AzureSubID = "03d13178-3e31-454d-9bdd-9e93bc53828a" #Please Provide Subscription ID Number for Azure Subscription
+    AzureSubID = "" #Please Provide Subscription ID Number for Azure Subscription
     
     
     }
