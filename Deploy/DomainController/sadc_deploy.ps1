@@ -638,6 +638,38 @@ function New-DCVM {
  
     }
 
+function set-hostnat {
+
+        param (
+    
+            $SDNConfig
+        )
+    
+        $VerbosePreference = "Continue" 
+    
+        $switchExist = Get-NetAdapter | Where-Object { $_.Name -match $SDNConfig.natHostVMSwitchName }
+    
+        if (!$switchExist) {
+    
+            Write-Verbose "Creating Internal NAT Switch: $($SDNConfig.natHostVMSwitchName)"
+            # Create Internal VM Switch for NAT
+            New-VMSwitch -Name $SDNConfig.natHostVMSwitchName -SwitchType Internal | Out-Null
+    
+            Write-Verbose "Applying IP Address to NAT Switch: $($SDNConfig.natHostVMSwitchName)"
+            # Apply IP Address to new Internal VM Switch
+            $intIdx = (Get-NetAdapter | Where-Object { $_.Name -match $SDNConfig.natHostVMSwitchName }).ifIndex
+            $natIP = $SDNConfig.natHostSubnet.Replace("0/24", "1")
+    
+            New-NetIPAddress -IPAddress $natIP -PrefixLength 24 -InterfaceIndex $intIdx | Out-Null
+    
+            # Create NetNAT
+    
+            Write-Verbose "Creating new NETNAT"
+            New-NetNat -Name $SDNConfig.natHostVMSwitchName  -InternalIPInterfaceAddressPrefix $SDNConfig.natHostSubnet | Out-Null
+    
+        }
+    
+    }
 ##########################################################################################Create Resources ###########################################################################
 
 #region Main
