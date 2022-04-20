@@ -10,8 +10,8 @@
     MultipleHyperVHostExternalSwitchName = "External"                          # Name of the External Hyper-V VM Switch identical on all hosts.
 
     # VHDX Paths 
-    guiVHDXPath                          = "C:\AzHCIVHDs\gui.vhdx"               # This value controls the location of the GUI VHDX.              
-    azsHCIVHDXPath                       = "C:\AzHCIVHDs\azshci.vhdx"           # This value controls the location of the Azure Stack HCI VHDX. 
+    guiVHDXPath                          = "C:\VMs\gui.vhdx"               # This value controls the location of the GUI VHDX.              
+    azsHCIVHDXPath                       = "C:\VMs\azshci.vhdx"           # This value controls the location of the Azure Stack HCI VHDX. 
     
 
     # SDN Lab Admin Password
