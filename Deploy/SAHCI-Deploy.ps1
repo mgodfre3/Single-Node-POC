@@ -72,8 +72,27 @@ Enable-WSManCredSSP -Role Client -DelegateComputer * -Force
 ###############################################################################################################################
 Write-Host -ForegroundColor Green -Object "Installing Required Features on Management Workstation"
 
+
 #Install some PS modules if not already installed
-Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell,RSAT-Hyper-V-Tools;
+
+$wsinfo=Get-computerinfo -Property osproducttype
+
+#Windows Workstation Command 
+if ($wsinfo -eq "workstation") {
+    $featurename="RSAT-AzureStack.HCI.Management.Tools", "RSAT-FailoverClusterManagement.Tools"
+ForEach ($f in $featurename){
+Add-WindowsCapability -Online -Name $f 
+    }
+$optionalFeatures="Microsoft-Hyper-V-Management-PowerShell"
+ForEach ($of in $optionalFeatures)
+{
+    Enable-WindowsOptionalFeature -Online -FeatureName $of
+} 
+
+elseif ($wsinfo -eq "server") {
+    Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell,RSAT-Hyper-V-Tools;
+}
+
 Install-Module AZ.ConnectedMachine -force
 
 ##########################################Configure Nodes####################################################################
@@ -89,7 +108,7 @@ Invoke-Command -ComputerName $ServerList -Credential $ADCred -ScriptBlock {
     New-NetFirewallRule -DisplayName “ICMPv4” -Direction Inbound -Action Allow -Protocol icmpv4 -Enabled True
     Enable-NetFirewallRule -DisplayGroup “Remote Desktop”
     Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" –Value 0
-    Set-TimeZone -Name "eastern Standard Time" 
+    Set-TimeZone -Name $config.$timezone 
 }
      
 Restart-Computer -ComputerName $ServerList -Protocol WSMan -Wait -For PowerShell -Force
@@ -217,7 +236,7 @@ write-host -ForegroundColor Green -Object "Storage Pool level is set to Windows 
 write-host -ForegroundColor Green -Object "Creating Cluster Shared Volume"
 
 #Create S2D Volume 
-New-Volume -FriendlyName "Volume1" -FileSystem CSVFS_ReFS -StoragePoolFriendlyName $config.StoragePoolName -Size 10GB -ProvisioningType Thin -CimSession $config.ClusterName
+New-Volume -FriendlyName "Volume1" -FileSystem CSVFS_ReFS -StoragePoolFriendlyName $config.StoragePoolName -Size 10GB -ProvisioningType Thin -CimSession $config.ClusterName -ResiliencySettingName "Simple"
 
 
 ############################################################Set Net-Intent########################################################
@@ -241,7 +260,7 @@ if ($tnc_clip.pingsucceded -eq "true") {
 }
 
 elseif ($tnc_clip.pingsucceded -eq "false") {
-    Start-ClusterResource -Cluster $config.ClusterName -Name Cluster IP Address
+    Start-ClusterResource -Cluster $config.ClusterName -Name "Cluster IP Address"
    Start-Sleep 15
 }
  
