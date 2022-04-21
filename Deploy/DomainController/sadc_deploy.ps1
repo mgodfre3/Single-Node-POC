@@ -528,7 +528,7 @@ function New-DCVM {
             $VerbosePreference = "Continue"
             $ErrorActionPreference = "Stop"
     
-            $SecureString = ConvertTo-SecureString $SDNConfig.SDNAdminPassword -AsPlainText -Force
+           
 
 
             $params = @{
@@ -542,37 +542,7 @@ function New-DCVM {
 
             Set-ADDefaultDomainPasswordPolicy @params
 
-            $params = @{
-
-                Name                  = 'NC Admin'
-                GivenName             = 'NC'
-                Surname               = 'Admin'
-                SamAccountName        = 'NCAdmin'
-                UserPrincipalName     = "NCAdmin@$SDNDomainFQDN"
-                AccountPassword       = $SecureString
-                Enabled               = $true
-                ChangePasswordAtLogon = $false
-                CannotChangePassword  = $true
-                PasswordNeverExpires  = $true
-            }
-
-            New-ADUser @params
-
-            $params.Name = 'NC Client'
-            $params.Surname = 'Client'
-            $params.SamAccountName = 'NCClient'
-            $params.UserPrincipalName = "NCClient@$SDNDomainFQDN" 
-
-            New-ADUser @params
-
-            NEW-ADGroup –name “NCAdmins” –groupscope Global
-            NEW-ADGroup –name “NCClients” –groupscope Global
-
-            add-ADGroupMember "Domain Admins" "NCAdmin"
-            add-ADGroupMember "NCAdmins" "NCAdmin"
-            add-ADGroupMember "NCClients" "NCClient"
-            add-ADGroupMember "NCClients" "Administrator"
-            add-ADGroupMember "NCAdmins" "Administrator"
+            
 
             # Set Administrator Account Not to Expire
 
@@ -670,6 +640,91 @@ function set-hostnat {
         }
     
     }
+
+    function Delete-AzSHCISandbox {
+
+        param (
+    
+            $VMPlacement,
+            $SDNConfig,
+            $SingleHostDelete
+    
+        )
+    
+        $VerbosePreference = "Continue"
+    
+        Write-Verbose "Deleting Azure Stack HCI Sandbox"
+    
+        foreach ($vm in $VMPlacement) {
+    
+            $AzSHOSTName = $vm.vmHost
+            $VMName = $vm.AzSHOST
+    
+            Invoke-Command -ComputerName $AzSHOSTName -ArgumentList $VMName -ScriptBlock {
+    
+                $VerbosePreference = "SilentlyContinue"
+    
+                Import-Module Hyper-V
+    
+                $VerbosePreference = "Continue"
+                $vmname = $args[0]
+    
+                # Delete SBXAccess vNIC (if present)
+                $vNIC = Get-VMNetworkAdapter -ManagementOS | Where-Object { $_.Name -match "SBXAccess" }
+                if ($vNIC) { $vNIC | Remove-VMNetworkAdapter -Confirm:$false }
+    
+                $sdnvm = Get-VM | Where-Object { $_.Name -eq $vmname }
+    
+                If (!$sdnvm) { Write-Verbose "Could not find $vmname to delete" }
+    
+                if ($sdnvm) {
+    
+                    Write-Verbose "Shutting down VM: $sdnvm)"
+    
+                    Stop-VM -VM $sdnvm -TurnOff -Force -Confirm:$false 
+                    $VHDs = $sdnvm | Select-Object VMId | Get-VHD
+                    Remove-VM -VM $sdnvm -Force -Confirm:$false 
+    
+                    foreach ($VHD in $VHDs) {
+    
+                        Write-Verbose "Removing $($VHD.Path)"
+                        Remove-Item -Path $VHD.Path -Force -Confirm:$false
+    
+                    }
+    
+                }
+    
+    
+            }
+    
+        }
+    
+        If ($SingleHostDelete -eq $true) {
+            
+            $RemoveSwitch = Get-VMSwitch | Where-Object { $_.Name -match $SDNConfig.InternalSwitch }
+    
+            If ($RemoveSwitch) {
+    
+                Write-Verbose "Removing Internal Switch: $($SDNConfig.InternalSwitch)"
+                $RemoveSwitch | Remove-VMSwitch -Force -Confirm:$false
+    
+            }
+    
+        }
+    
+        Write-Verbose "Deleting RDP links"
+    
+        Remove-Item C:\Users\Public\Desktop\AdminCenter.lnk -Force -ErrorAction SilentlyContinue
+    
+    
+        Write-Verbose "Deleting NetNAT"
+        Get-NetNAT | Remove-NetNat -Confirm:$false
+    
+        Write-Verbose "Deleting Internal Switches"
+        Get-VMSwitch | Where-Object { $_.SwitchType -eq "Internal" } | Remove-VMSwitch -Force -Confirm:$false
+    
+    
+    }    
 ##########################################################################################Create Resources ###########################################################################
 
 #region Main
