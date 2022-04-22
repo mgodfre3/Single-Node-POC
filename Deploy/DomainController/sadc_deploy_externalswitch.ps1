@@ -136,8 +136,8 @@ function New-ExternalSwitch {
             $activenetadapter=Get-Netadapter | where-object status -eq "up"
             #Add-NetIntent -Name "External" -Management -Compute -AdapterName $activenetadapter
 
-            New-VMSwitch -SwitchType External -Name $pswitchname -ManagementOS $true -MinimumBandwidthMode Weight -EnableEmbeddedTeaming $true | Out-Null
-            Add-VMSwitchTeamMember -VMSwitchName $pswitchname -NetadapterName $activenetadapter 
+            New-VMSwitch -Name $pswitchname -AllowManagementOS $true -EnableEmbeddedTeaming $true -NetAdapterName $activenetadapter.Name | Out-Null
+           
             
             #Assign IP to External Switch
             $ExternalAdapter = Get-Netadapter -Name "vEthernet ($pswitchname)"
