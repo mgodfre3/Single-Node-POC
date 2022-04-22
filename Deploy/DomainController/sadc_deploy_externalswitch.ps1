@@ -133,11 +133,12 @@ function New-ExternalSwitch {
     $querySwitch = Get-VMSwitch -Name $pswitchname -ErrorAction Ignore
     
     if (!$querySwitch) {
-        $activenetadapter=Get-Netadapter | where-object status -eq "up"
-        Add-NetIntent -Name "External" -Management -Compute -AdapterName $activenetadapter
+            $activenetadapter=Get-Netadapter | where-object status -eq "up"
+            #Add-NetIntent -Name "External" -Management -Compute -AdapterName $activenetadapter
 
             New-VMSwitch -SwitchType External -Name $pswitchname -ManagementOS $true -MinimumBandwidthMode Weight -EnableEmbeddedTeaming $true | Out-Null
             Add-VMSwitchTeamMember -VMSwitchName $pswitchname -NetadapterName $activenetadapter 
+            
             #Assign IP to External Switch
             $ExternalAdapter = Get-Netadapter -Name "vEthernet ($pswitchname)"
             $IP = $SDNConfig.PhysicalHostInternalIP
@@ -370,7 +371,7 @@ function New-DCVM {
 
             VMName       = $VMName
             Name         = $SDNConfig.DCName
-            SwitchName   = $InternalSwitch
+            SwitchName   = $ExternalSwitch
             DeviceNaming = 'On'
 
         }
@@ -705,11 +706,11 @@ function set-hostnat {
     
         If ($SingleHostDelete -eq $true) {
             
-            $RemoveSwitch = Get-VMSwitch | Where-Object { $_.Name -match $SDNConfig.InternalSwitch }
+            $RemoveSwitch = Get-VMSwitch | Where-Object { $_.Name -match $SDNConfig.ExternalSwitch }
     
             If ($RemoveSwitch) {
     
-                Write-Verbose "Removing Internal Switch: $($SDNConfig.InternalSwitch)"
+                Write-Verbose "Removing Internal Switch: $($SDNConfig.ExternalSwitch)"
                 $RemoveSwitch | Remove-VMSwitch -Force -Confirm:$false
     
             }
@@ -788,7 +789,7 @@ $NestedVMMemoryinGB = $SDNConfig.NestedVMMemoryinGB
 $guiVHDXPath = $SDNConfig.guiVHDXPath
 $azSHCIVHDXPath = $SDNConfig.azSHCIVHDXPath
 $HostVMPath = $SDNConfig.HostVMPath
-$InternalSwitch = $SDNConfig.InternalSwitch
+$ExternalSwitch = $SDNConfig.ExternalSwitch
 $natDNS = $SDNConfig.natDNS
 $natSubnet = $SDNConfig.natSubnet
 $natConfigure = $SDNConfig.natConfigure   
