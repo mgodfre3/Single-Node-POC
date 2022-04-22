@@ -122,7 +122,7 @@ function Set-LocalHyperVSettings {
     Set-VMhost @params  
 }
     
-function New-InternalSwitch {
+function New-ExternalSwitch {
     
     Param (
 
@@ -133,31 +133,35 @@ function New-InternalSwitch {
     $querySwitch = Get-VMSwitch -Name $pswitchname -ErrorAction Ignore
     
     if (!$querySwitch) {
-    
-        New-VMSwitch -SwitchType Internal -MinimumBandwidthMode None -Name $pswitchname | Out-Null
-    
-        #Assign IP to Internal Switch
-        $InternalAdapter = Get-Netadapter -Name "vEthernet ($pswitchname)"
-        $IP = $SDNConfig.PhysicalHostInternalIP
-        $Prefix = ($SDNConfig.AzSMGMTIP.Split("/"))[1]
-        $Gateway = $SDNConfig.SDNLABRoute
-        $DNS = $SDNConfig.SDNLABDNS
-        
-        $params = @{
+        $activenetadapter=Get-Netadapter | where-object status -eq "up"
+        Add-NetIntent -Name "External" -Management -Compute -AdapterName $activenetadapter
 
-            AddressFamily  = "IPv4"
-            IPAddress      = $IP
-            PrefixLength   = $Prefix
-            DefaultGateway = $Gateway
+            New-VMSwitch -SwitchType External -Name $pswitchname -ManagementOS $true -MinimumBandwidthMode Weight -EnableEmbeddedTeaming $true | Out-Null
+            Add-VMSwitchTeamMember -VMSwitchName $pswitchname -NetadapterName $activenetadapter 
+            #Assign IP to External Switch
+            $ExternalAdapter = Get-Netadapter -Name "vEthernet ($pswitchname)"
+            $IP = $SDNConfig.PhysicalHostInternalIP
+            $Prefix = ($SDNConfig.AzSMGMTIP.Split("/"))[1]
+            $Gateway = $SDNConfig.SDNLABRoute
+            $DNS = $SDNConfig.SDNLABDNS
             
-        }
+            $params = @{
     
-        $InternalAdapter | New-NetIPAddress @params | Out-Null
-        $InternalAdapter | Set-DnsClientServerAddress -ServerAddresses $DNS | Out-Null
-    
+                AddressFamily  = "IPv4"
+                IPAddress      = $IP
+                PrefixLength   = $Prefix
+                DefaultGateway = $Gateway
+                
+            }
+        
+            $ExternalAdapter | New-NetIPAddress @params | Out-Null
+            $ExternalAdapter | Set-DnsClientServerAddress -ServerAddresses $DNS | Out-Null
+        
+        
+       
     }
     
-    Else { Write-Verbose "Internal Switch $pswitchname already exists. Not creating a new internal switch." }
+    Else { Write-Verbose "External Switch $pswitchname already exists. Not creating a new external switch." }
     
 }
 
@@ -641,90 +645,90 @@ function set-hostnat {
     
     }
 
-function Delete-AzSHCISandbox {
+    function Delete-AzSHCISandbox {
 
-    param (
-
-        $VMPlacement,
-        $SDNConfig,
-        $SingleHostDelete
-
-    )
-
-    $VerbosePreference = "Continue"
-
-    Write-Verbose "Deleting Azure Stack HCI Sandbox"
-
-    foreach ($vm in $VMPlacement) {
-
-        $AzSHOSTName = $vm.vmHost
-        $VMName = $vm.AzSHOST
-
-        Invoke-Command -ComputerName $AzSHOSTName -ArgumentList $VMName -ScriptBlock {
-
-            $VerbosePreference = "SilentlyContinue"
-
-            Import-Module Hyper-V
-
-            $VerbosePreference = "Continue"
-            $vmname = $args[0]
-
-            # Delete SBXAccess vNIC (if present)
-            $vNIC = Get-VMNetworkAdapter -ManagementOS | Where-Object { $_.Name -match "SBXAccess" }
-            if ($vNIC) { $vNIC | Remove-VMNetworkAdapter -Confirm:$false }
-
-            $sdnvm = Get-VM | Where-Object { $_.Name -eq $vmname }
-
-            If (!$sdnvm) { Write-Verbose "Could not find $vmname to delete" }
-
-            if ($sdnvm) {
-
-                Write-Verbose "Shutting down VM: $sdnvm)"
-
-                Stop-VM -VM $sdnvm -TurnOff -Force -Confirm:$false 
-                $VHDs = $sdnvm | Select-Object VMId | Get-VHD
-                Remove-VM -VM $sdnvm -Force -Confirm:$false 
-
-                foreach ($VHD in $VHDs) {
-
-                    Write-Verbose "Removing $($VHD.Path)"
-                    Remove-Item -Path $VHD.Path -Force -Confirm:$false
-
+        param (
+    
+            $VMPlacement,
+            $SDNConfig,
+            $SingleHostDelete
+    
+        )
+    
+        $VerbosePreference = "Continue"
+    
+        Write-Verbose "Deleting Azure Stack HCI Sandbox"
+    
+        foreach ($vm in $VMPlacement) {
+    
+            $AzSHOSTName = $vm.vmHost
+            $VMName = $vm.AzSHOST
+    
+            Invoke-Command -ComputerName $AzSHOSTName -ArgumentList $VMName -ScriptBlock {
+    
+                $VerbosePreference = "SilentlyContinue"
+    
+                Import-Module Hyper-V
+    
+                $VerbosePreference = "Continue"
+                $vmname = $args[0]
+    
+                # Delete SBXAccess vNIC (if present)
+                $vNIC = Get-VMNetworkAdapter -ManagementOS | Where-Object { $_.Name -match "SBXAccess" }
+                if ($vNIC) { $vNIC | Remove-VMNetworkAdapter -Confirm:$false }
+    
+                $sdnvm = Get-VM | Where-Object { $_.Name -eq $vmname }
+    
+                If (!$sdnvm) { Write-Verbose "Could not find $vmname to delete" }
+    
+                if ($sdnvm) {
+    
+                    Write-Verbose "Shutting down VM: $sdnvm)"
+    
+                    Stop-VM -VM $sdnvm -TurnOff -Force -Confirm:$false 
+                    $VHDs = $sdnvm | Select-Object VMId | Get-VHD
+                    Remove-VM -VM $sdnvm -Force -Confirm:$false 
+    
+                    foreach ($VHD in $VHDs) {
+    
+                        Write-Verbose "Removing $($VHD.Path)"
+                        Remove-Item -Path $VHD.Path -Force -Confirm:$false
+    
+                    }
+    
                 }
-
+    
+    
             }
-
-
+    
         }
-
-    }
-
-    If ($SingleHostDelete -eq $true) {
-        
-        $RemoveSwitch = Get-VMSwitch | Where-Object { $_.Name -match $SDNConfig.InternalSwitch }
-
-        If ($RemoveSwitch) {
-
-            Write-Verbose "Removing Internal Switch: $($SDNConfig.InternalSwitch)"
-            $RemoveSwitch | Remove-VMSwitch -Force -Confirm:$false
-
+    
+        If ($SingleHostDelete -eq $true) {
+            
+            $RemoveSwitch = Get-VMSwitch | Where-Object { $_.Name -match $SDNConfig.InternalSwitch }
+    
+            If ($RemoveSwitch) {
+    
+                Write-Verbose "Removing Internal Switch: $($SDNConfig.InternalSwitch)"
+                $RemoveSwitch | Remove-VMSwitch -Force -Confirm:$false
+    
+            }
+    
         }
-
-    }
-
-    Write-Verbose "Deleting RDP links"
-
-    Remove-Item C:\Users\Public\Desktop\AdminCenter.lnk -Force -ErrorAction SilentlyContinue
-
-
-    Write-Verbose "Deleting NetNAT"
-    Get-NetNAT | Remove-NetNat -Confirm:$false
-
-    Write-Verbose "Deleting Internal Switches"
-    Get-VMSwitch | Where-Object { $_.SwitchType -eq "Internal" } | Remove-VMSwitch -Force -Confirm:$false
-
-
-}    
+    
+        Write-Verbose "Deleting RDP links"
+    
+        Remove-Item C:\Users\Public\Desktop\AdminCenter.lnk -Force -ErrorAction SilentlyContinue
+    
+    
+        Write-Verbose "Deleting NetNAT"
+        Get-NetNAT | Remove-NetNat -Confirm:$false
+    
+        Write-Verbose "Deleting Internal Switches"
+        Get-VMSwitch | Where-Object { $_.SwitchType -eq "Internal" } | Remove-VMSwitch -Force -Confirm:$false
+    
+    
+    }    
 ##########################################################################################Create Resources ###########################################################################
 
 #region Main
@@ -796,22 +800,22 @@ $VerbosePreference = "Continue"
 $ErrorActionPreference = "Stop"
     
 #Configure Hyper-V Host
-Write-Verbose "Creating Internal Switch"
+Write-Verbose "Creating External Switch"
 
     $params = @{
 
-        pswitchname = $InternalSwitch
+        pswitchname = $SDNConfig.ExternalSwitch
         SDNConfig   = $SDNConfig
     
     }
 
-    New-InternalSwitch @params
+    New-ExternalSwitch @params
 
     Write-Verbose "Creating NAT Switch"
 
     set-hostnat -SDNConfig $SDNConfig
 
-    $VMSwitch = $InternalSwitch
+    $VMSwitch = $sdnconfig.ExternalSwitch
 
 
 
