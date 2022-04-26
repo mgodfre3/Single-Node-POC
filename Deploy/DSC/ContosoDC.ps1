@@ -1,12 +1,12 @@
 Configuration ContosoDC {
     Param (
         [string]$DomainName="Contoso",
-        [String]$targetDrive = "V",
+        [String]$targetDrive = "C",
         [String]$targetADPath = "$targetDrive" + ":\ADDS",
-        [String]$secPassword = (ConvertTo-SecureString "Password01" -AsPlainText -Force),
-        [SecureString]$cred = (New-Object System.Management.Automation.PSCredential ("Contoso\Administrator", $secPassword))
+        [Securestring]$secPassword = (ConvertTo-SecureString "Password01" -AsPlainText -Force),
+        [PSCredential]$domaincreds
     )
-    
+
     Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
     Import-DscResource -ModuleName 'xPSDesiredStateConfiguration'
     Import-DscResource -ModuleName 'ComputerManagementDsc'
@@ -18,9 +18,13 @@ Configuration ContosoDC {
     Import-DscResource -ModuleName 'xCredSSP'
     Import-DscResource -ModuleName 'ActiveDirectoryDsc'
 
-    Node ContosoDC {
-        $netAdapters = Get-NetAdapter -Name ($ipConfig.InterfaceAlias) | Select-Object -First 1
-        $InterfaceAlias = $($netAdapters.Name) 
+    Node "ContosoDC" {
+        #$netAdapters = Get-NetAdapter -Name ($ipConfig.InterfaceAlias) | Select-Object -First 1
+        #$InterfaceAlias = $($netAdapters.Name) 
+        
+        if ( $domaincreds -eq $null) {
+           $domaincreds= New-Object System.Management.Automation.PSCredential ("Contoso\Administrator", $secPassword)
+            }
 
             #Windows Features
             WindowsFeature DNS { 
@@ -78,10 +82,21 @@ Configuration ContosoDC {
                 DatabasePath                  = "$targetADPath" + "\NTDS"
                 LogPath                       = "$targetADPath" + "\NTDS"
                 SysvolPath                    = "$targetADPath" + "\SYSVOL"
-                DependsOn                     = @("[File]ADfolder", "[WindowsFeature]ADDSInstall")
+                DependsOn                     = @("[WindowsFeature]ADDSInstall")
             }
 
         
 
         }
 }
+
+$Configdata=@{
+allnodes=@(
+    @{
+        nodename="ContosoDC"
+        PSDSCAllowPlainTextPassword=$true
+    }
+)
+}
+
+ContosoDC -ConfigurationData $configdata 
