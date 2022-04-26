@@ -21,8 +21,8 @@
     HostVMPath                           = "C:\VMs"                              # This value controls the path where the Nested VMs will be stored on all hosts.
     NestedVMMemoryinGB                   = 30GB                                  # This value controls the amount of RAM for each Nested Hyper-V Host (AzSHOST1-2).
     AzSMGMTMemoryinGB                    = 16GB                                  # This value controls the amount of RAM for the AzSMGMT Nested VM which contains only the Console, Router, Admincenter, and DC VMs.
-    ExternalSwitch                       = "ExternalSwitch"                      # Name of internal switch that the SDN Lab VMs will use in Single Host mode. This only applies when using a single host.
-
+    InternalSwitch                       = "InternalSwitch"                      # Name of internal switch that the SDN Lab VMs will use in Single Host mode. This only applies when using a single host.
+    ExternalSwitch                       = "HCI"
 
     # ProductKeys
     GUIProductKey                        = "WMDGN-G9PQG-XVVXX-R3X43-63DFG"        # Product key for Windows Server 2019 (Desktop Experience) Datacenter Installation

@@ -101,7 +101,19 @@ function Set-HyperVSettings {
     }
     
 }
-    
+function get-sysprepedvhd {
+    $GUIURI="https://aka.ms/AAbclsv"
+       $tp=Test-Path $guiVHDXPath
+       if ($tp -eq "false"){
+       New-Item -Path C:\ -Name VMS -ItemType Directory
+       New-Item -Path C:\vms -Name Base -ItemType Directory 
+       Invoke-WebRequest $GUIURI -outfile $guiVHDXPath
+       }
+       else {
+       Write-Host "VHD is downloaded to Staging loction"
+       }
+   } 
+       
 function Set-LocalHyperVSettings {
 
     Param (
@@ -479,7 +491,7 @@ function New-DCVM {
             $VerbosePreference = "SilentlyContinue"
             $NIC = Get-NetAdapterAdvancedProperty -RegistryKeyWord "HyperVNetworkAdapterName" | Where-Object { $_.RegistryValue -eq $DCName }
             Rename-NetAdapter -name $NIC.name -newname $DCName | Out-Null 
-            New-NetIPAddress -InterfaceAlias $DCName –IPAddress $ip -PrefixLength $PrefixLength -DefaultGateway $SDNLabRoute | Out-Null
+            New-NetIPAddress -InterfaceAlias $DCName -IPAddress $ip -PrefixLength $PrefixLength -DefaultGateway $SDNLabRoute | Out-Null
             Set-DnsClientServerAddress -InterfaceAlias $DCName -ServerAddresses $IP | Out-Null
             Install-WindowsFeature -name AD-Domain-Services –IncludeManagementTools | Out-Null
             $VerbosePreference = "Continue"
@@ -645,6 +657,22 @@ function set-hostnat {
         }
     
     }
+    function configure-hcivm {
+        $biosversion=(get-computerinfo).biosmanufacturer 
+        
+        if ($biosversion -eq "Microsoft Corporation"){
+            Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart -Verbose
+            Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Management-PowerShell -All -NoRestart -Verbose
+            }
+        
+        elseif ($osversion -ne "Microsoft Corporation"){
+            Install-WindowsFeature -Name "BitLocker", "Data-Center-Bridging", "Failover-Clustering", "FS-FileServer", "FS-Data-Deduplication", "Hyper-V", "Hyper-V-PowerShell", "RSAT-AD-Powershell", "RSAT-Clustering-Powershell","FS-Data-Deduplication", "Storage-Replica", "NetworkATC", "System-Insights" -IncludeAllSubFeature -IncludeManagementTools
+            }
+        
+        else {
+            Write-Host "Please confirm you have enabled Processor Virtualization Settings in BIOS."
+            }
+        }
 
     function Delete-AzSHCISandbox {
 
@@ -779,7 +807,7 @@ if ($Delete) {
 }
 
 #Copy and Download Files for DC Image
-
+get-sysprepedvhd
 
 
 
@@ -794,7 +822,7 @@ $natDNS = $SDNConfig.natDNS
 $natSubnet = $SDNConfig.natSubnet
 $natConfigure = $SDNConfig.natConfigure   
 
-
+configure-hcivm
 $VerbosePreference = "SilentlyContinue" 
 Import-Module Hyper-V 
 $VerbosePreference = "Continue"

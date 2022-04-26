@@ -79,15 +79,16 @@ $wsinfo=Get-computerinfo -Property osproducttype
 
 #Windows Workstation Command 
 if ($wsinfo -eq "workstation") {
-    $featurename="RSAT-AzureStack.HCI.Management.Tools", "RSAT-FailoverClusterManagement.Tools"
-ForEach ($f in $featurename){
-Add-WindowsCapability -Online -Name $f 
-    }
-$optionalFeatures="Microsoft-Hyper-V-Management-PowerShell"
-ForEach ($of in $optionalFeatures)
-{
-    Enable-WindowsOptionalFeature -Online -FeatureName $of
-} 
+        $featurename="RSAT-AzureStack.HCI.Management.Tools", "RSAT-FailoverClusterManagement.Tools"
+        ForEach ($f in $featurename){
+        Add-WindowsCapability -Online -Name $f 
+            }
+        $optionalFeatures="Microsoft-Hyper-V-Management-PowerShell"
+        ForEach ($of in $optionalFeatures)
+        {
+            Enable-WindowsOptionalFeature -Online -FeatureName $of
+        } 
+    }    
 
 elseif ($wsinfo -eq "server") {
     Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell,RSAT-Hyper-V-Tools;
@@ -125,11 +126,11 @@ Invoke-Command -ComputerName $config.Node01 -Credential $ADCred -ScriptBlock {
 
 # Configure IP and subnet mask, no default gateway for Storage interfaces
     #MGMT
-    $netadapter=Get-NetAdapter | where status -eq "up"
+    $netadapter=Get-NetAdapter | where-object status -eq "up"
     New-NetIPAddress -InterfaceAlias $netadapter.ifalias -IPAddress $using:config.node01_MgmtIP -PrefixLength 24 -DefaultGateway $using:config.GWIP | Set-DnsClientServerAddress -ServerAddresses $using:config.DNSIP
 
-    #New-NetIPAddress -InterfaceAlias "LOM2 Port3" -IPAddress $using:config.node01_MgmtIP -PrefixLength 24 -DefaultGateway $using:config.GWIP  | Set-DnsClientServerAddress -ServerAddresses $using:config.DNSIP
-    Get-NetAdapter | where status -NE "up"|  Disable-NetAdapter -Confirm:$false
+    
+Get-NetAdapter | where-object status -NE "up"|  Disable-NetAdapter -Confirm:$false
 }
 
 
@@ -160,7 +161,7 @@ Write-Host -ForegroundColor Green -Object "Creating the Cluster"
 
 #Create the Cluster
 #Test-Cluster –Node $config.Node01 –Include "Storage Spaces Direct", "Inventory", "Network", "System Configuration"
-New-Cluster -Name $config.ClusterName -Node $config.Node01 -StaticAddress $config.ClusterIP -NoStorage -AdministrativeAccessPoint Dns
+New-Cluster -Name $config.ClusterName -Node $config.Node01 -StaticAddress $config.ClusterIP -NoStor age -AdministrativeAccessPointDns
 
 
 #Pause for a bit then clear DNS cache.
@@ -236,7 +237,7 @@ write-host -ForegroundColor Green -Object "Storage Pool level is set to Windows 
 write-host -ForegroundColor Green -Object "Creating Cluster Shared Volume"
 
 #Create S2D Volume 
-New-Volume -FriendlyName "Volume1" -FileSystem CSVFS_ReFS -StoragePoolFriendlyName $config.StoragePoolName -Size 10GB -ProvisioningType Thin -CimSession $config.ClusterName -ResiliencySettingName "Simple"
+New-Volume -FriendlyName "Volume1" -FileSystem CSVFS_ReFS -StoragePoolFriendlyName $config.StoragePoolName -Size $config.CSVSize -ProvisioningType Thin -CimSession $config.ClusterName -ResiliencySettingName "Simple"
 
 
 ############################################################Set Net-Intent########################################################
@@ -245,7 +246,7 @@ write-host -ForegroundColor Green -Object "Setting NetworkATC Configuration"
 Invoke-Command -ComputerName $config.Node01 -Credential $ADcred -Authentication Credssp {
 
 #North-South Net-Intents
-Add-NetIntent -ClusterName $using:config.ClusterName -AdapterName "Ethernet" -Name HCI -Compute -Management  
+Add-NetIntent -ComputerName $using:config.Node01 -AdapterName $netadapter -Name HCI -Compute -Management  
 }
 
 start-sleep 30 
