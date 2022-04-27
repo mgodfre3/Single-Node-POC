@@ -21,7 +21,9 @@ Configuration SingleNodeHCI {
     Import-DscResource -ModuleName 'DSCR_Shortcut' -ModuleVersion 2.2.0
     Import-DscResource -ModuleName 'xHyper-V'
     Import-DscResource -ModuleName 'NetworkingDSC' -ModuleVersion 8.2.0 
-    Import-DscResource -Module ComputerManagementDsc -ModuleVersion 8.5.0 
+    Import-DscResource -ModuleName ComputerManagementDsc -ModuleVersion 8.5.0
+    Import-DscResource -ModuleName xFailOverCluster
+
 
     
     Node localhost{
@@ -73,13 +75,15 @@ Configuration SingleNodeHCI {
                 DestinationPath="$env:SystemDrive\Temp\ContosoDC.zip"
                 DependsOn="[File]Temp"
             }
-        
+
+        if (get-childitem "$env:SystemDrive\HCIVHDs\GUI.vhdx" -eq $null) {
             xRemoteFile "Server2019VHD"{
                 uri=$server2019_uri
                 DestinationPath="$env:SystemDrive\HCIVHDs\GUI.vhdx"
                 DependsOn="[File]HCIVHDs"
             }
-
+        }
+        
             Archive "ContosoDC-MOF" {
                 Path="$env:SystemDrive\temp\ContosoDC.zip"
                 Destination="$env:SystemDrive\Temp\ContosoDC\"
@@ -203,15 +207,31 @@ Configuration SingleNodeHCI {
                 DependsOn       = '[xVHD]ContosoDC', '[xVMSwitch]Internalswitch', '[xVhdFile]Copy_ContosoDC-MOF_to_ContosoDC'
                 State           = 'Off'
             }
-
-            #Configure SAHCI Node (Continued after domain controller deployment)
+            
+                #Configure SAHCI Node (Continued after domain controller deployment)
             Computer JoinDomain
-                {
-                    Name       = 'SAHCI'
-                    DomainName = 'Contoso'
-                    Credential = $domaincreds
+                    {
+                        Name       = 'SAHCI'
+                        DomainName = 'Contoso'
+                        Credential = $domaincreds
+                    }
+  <#              
+            xCluster CreateCluster{
+                Name                          = 'SAHCICL'
+            #   StaticIPAddress               = '192.168.100.20/24'
+                DomainAdministratorCredential = $domaincreds
+                DependsOn                     = '[Computer]JoinDomain'
                 }
-
+                
+            xWaitForCluster WaitForCluster
+                {
+                    Name             = 'SAHCICL'
+                    RetryIntervalSec = 10
+                    RetryCount       = 60
+                    DependsOn        = '[xCluster]CreateCluster'
+                }
+#>
+                
 
 
         }

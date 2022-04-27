@@ -95,6 +95,7 @@ allnodes=@(
     @{
         nodename="ContosoDC"
         PSDSCAllowPlainTextPassword=$true
+        PSDSCAllowDomainUser=$true
         
     }
 )
