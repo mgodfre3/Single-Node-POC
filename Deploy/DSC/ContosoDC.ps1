@@ -7,15 +7,15 @@ Configuration ContosoDC {
         [PSCredential]$domaincreds
     )
 
-    Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
-    Import-DscResource -ModuleName 'xPSDesiredStateConfiguration'
-    Import-DscResource -ModuleName 'ComputerManagementDsc'
+    #Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
+    Import-DscResource -ModuleName 'xPSDesiredStateConfiguration' -ModuleVersion 9.1.0
+    Import-DscResource -ModuleName 'ComputerManagementDsc' -ModuleVersion 8.5.0
     Import-DscResource -ModuleName 'StorageDSC'
-    Import-DscResource -ModuleName 'NetworkingDSC'
+    Import-DscResource -ModuleName 'NetworkingDSC' -ModuleVersion 8.2.0
     Import-DscResource -ModuleName 'DnsServerDsc'
     Import-DscResource -ModuleName 'cChoco'
     Import-DscResource -ModuleName 'DSCR_Shortcut'
-    Import-DscResource -ModuleName 'xCredSSP'
+    Import-DscResource -ModuleName 'xCredSSP' -ModuleVersion 1.3.0.0
     Import-DscResource -ModuleName 'ActiveDirectoryDsc'
 
     Node "ContosoDC" {
@@ -95,6 +95,7 @@ allnodes=@(
     @{
         nodename="ContosoDC"
         PSDSCAllowPlainTextPassword=$true
+        
     }
 )
 }

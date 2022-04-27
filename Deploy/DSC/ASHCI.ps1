@@ -1,6 +1,6 @@
     
     
-Configuration Single-NodeHCI {
+Configuration SingleNodeHCI {
         param(
     [String]$targetDrive = "C",
     [String]$targetVMPath = "$targetDrive" + ":\VMs",
@@ -8,7 +8,11 @@ Configuration Single-NodeHCI {
     [String]$wacUri = "https://aka.ms/wacdownload",
     [String]$SwitchName="InternalSwitch",
     [String]$ExtSwitchName="HCI-Uplink",
-    [String]$NetAdapter=(Get-NetAdapter | Where-Object State -eq "UP")
+    [String]$vhdPath = 'C:\temp\disk.vhdx',
+    [String]$relativeDestinationPath = '$env:SystemDrive\Windows\System32\Configuration\Pending.mof',
+    [String]$dcmofuri="",
+    [String]$netAdapters = (Get-Netadapter | Where-Object status -eq "Up"), 
+    [PSCredential]$domaincreds
     )
        
         Import-DscResource -ModuleName 'PSDesiredStateConfiguration' 
@@ -17,6 +21,7 @@ Configuration Single-NodeHCI {
         Import-DscResource -ModuleName 'DSCR_Shortcut'
         Import-DscResource -ModuleName 'xHyper-V'
         Import-DscResource -ModuleName 'NetworkingDSC'
+        Import-DscResource -Module ComputerManagementDsc
 
         
         Node localhost{
@@ -28,6 +33,7 @@ Configuration Single-NodeHCI {
                 RefreshMode = 'Push'
                  }
 
+               
 
                 #Windows Features Installations
                 WindowsFeature Hyper-V {
@@ -55,13 +61,32 @@ Configuration Single-NodeHCI {
                     DestinationPath = "$env:SystemDrive\HCIVHDs"
                     
                 }
-            <#
+
+                File "temp" {
+                    Type            = 'Directory'
+                    DestinationPath = "$env:SystemDrive\Temp"
+                    
+                }
+
+                xRemoteFile "ContosoDC-MOF"{
+                    uri=$dcmofuri
+                    DestinationPath="$env:SystemDrive\Temp\ContosoDC.zip"
+                    DependsOn="[File]Temp"
+                }
+            
                 xRemoteFile "Server2019VHD"{
                     uri=$server2019_uri
                     DestinationPath="$env:SystemDrive\HCIVHDs\GUI.vhdx"
                     DependsOn="[File]HCIVHDs"
                 }
-            #> 
+
+                Archive "ContosoDC-MOF" {
+                    Path="$env:SystemDrive\temp\ContosoDC.zip"
+                    Destination="$env:SystemDrive\Temp\ContosoDC\"
+                    DependsOn="[xRemoteFile]ContosoDC-MOF"
+            
+                }
+            
                 #Virtual Switch Configurations
                
                 xVMSwitch ExternalSwitch
@@ -69,7 +94,7 @@ Configuration Single-NodeHCI {
                     Ensure                = 'Present'
                     Name                  = $ExtSwitchName
                     Type                  = 'External'
-                    NetAdapterName        = "Ethernet"
+                    NetAdapterName        = "$Netadapters"
                     EnableEmbeddedTeaming = $true
                     AllowManagementOS =  $true
                     BandwidthReservationMode = "weight"
@@ -90,7 +115,7 @@ Configuration Single-NodeHCI {
                 {
                     InterfaceAlias = "vEthernet (InternalSwitch)"
                     AddressFamily  = 'IPv4'
-                    IPAddress      = '192.168.0.1/24'
+                    IPAddress      = '192.168.1.1/24'
                     DependsOn      = "[xVMSwitch]InternalSwitch"
                 }
 
@@ -102,6 +127,7 @@ Configuration Single-NodeHCI {
                     DependsOn      = "[IPAddress]New IP for vEthernet $SwitchName"
                 }
 
+                <#
                 script NAT {
                     GetScript  = {
                         $nat = "AzSHCINAT"
@@ -121,6 +147,7 @@ Configuration Single-NodeHCI {
                     }
                     DependsOn  = "[IPAddress]New IP for vEthernet $SwitchName"
                 }
+                #>
 
                 #Domain Controller Virtual Machine
                 #OS VHD
@@ -135,8 +162,7 @@ Configuration Single-NodeHCI {
                         DestinationPath = "$targetVMPath\ContosoDC\VHD"
                         }
 
-                xVHD ContosoDC
-                {
+                xVHD ContosoDC {
             
                     Ensure     = 'Present'
                     Name       = "ContosoDC-OS.vhdx"
@@ -146,6 +172,20 @@ Configuration Single-NodeHCI {
                     Type = 'Differencing'
                     MaximumSizeBytes = "40096"
                 }
+
+                xVhdFile "Copy_ContosoDC-MOF_to_ContosoDC"{
+                    VhdPath =  "$targetVMPath\ContosoDC\VHD\ContosoDC-OS.vhdx"
+                    FileDirectory =  @(
+                
+                        # Pending.mof
+                        MSFT_xFileDirectory {
+                            SourcePath = "$env:SystemDrive\Temp\ContosoDC\ContosoDC.mof"
+                            DestinationPath = "\Windows\Sytem32\Configuration\Pending.mof" 
+                        }
+                    )
+                }
+                       
+    
                 # create the testVM out of the vhd.
                 
                 xVMHyperV ContosoDC_VM
@@ -160,9 +200,17 @@ Configuration Single-NodeHCI {
                     Generation = 2
                     Path = "$targetVMPath\ContosoDC"
                     RestartIfNeeded = $true
-                    DependsOn       = '[xVHD]ContosoDC', '[xVMSwitch]Internalswitch'
-                    State           = 'Running'
+                    DependsOn       = '[xVHD]ContosoDC', '[xVMSwitch]Internalswitch', '[xVhdFile]Copy_ContosoDC-MOF_to_ContosoDC'
+                    State           = 'Off'
                 }
+
+                #Configure SAHCI Node (Continued after domain controller deployment)
+                Computer RenameServer{
+                    Name="SAHCI"
+                    DomainName="Contoso"
+                    Credential=$domaincreds
+                    DependsOn='[xVMHyperV]ContosoDC_VM'
+                 }
 
 
 

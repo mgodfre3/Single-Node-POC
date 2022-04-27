@@ -1,4 +1,4 @@
- <#
+
    
 $ComputerName = "ContosoDC"  
 $Password = "Password01"  
@@ -8,7 +8,7 @@ $DomainName = "Contoso.com"
 $Cred = ConvertTo-SecureString -String $Password -Force -AsPlainText  
 $DomainCredential = New-Object System.Management.Automation.PSCredential ("$(($DomainName -split '\.')[0])\Administrator", $Cred)  
 $DSRMpassword = New-Object System.Management.Automation.PSCredential ('No UserName', $Cred)  
- #>
+ 
  
 Configuration DomainController {  
   param (  

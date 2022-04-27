@@ -649,11 +649,6 @@ $ErrorActionPreference = "Stop"
 $starttime = Get-Date
    
 
-# Set VM Host Memory
-$totalPhysicalMemory = (Get-CimInstance -ClassName 'Cim_PhysicalMemory' | Measure-Object -Property Capacity -Sum).Sum / 1GB
-$availablePhysicalMemory = (([math]::Round(((((Get-Counter -Counter '\Hyper-V Dynamic Memory Balancer(System Balancer)\Available Memory For Balancing' -ComputerName $env:COMPUTERNAME).CounterSamples.CookedValue) / 1024) - 18) / 2))) * 1073741824
-$SDNConfig.NestedVMMemoryinGB = $availablePhysicalMemory
-
 
 # Delete configuration if specified
 
