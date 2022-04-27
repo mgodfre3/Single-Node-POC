@@ -10,7 +10,7 @@ Configuration SingleNodeHCI {
 [String]$ExtSwitchName="HCI-Uplink",
 [String]$vhdPath = 'C:\temp\disk.vhdx',
 [String]$relativeDestinationPath = '$env:SystemDrive\Windows\System32\Configuration\Pending.mof',
-[String]$dcmofuri="",
+[String]$dcmofuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/ContosoDC/ContosoDC.zip?raw=true",
 [String]$netAdapters = (Get-Netadapter | Where-Object status -eq "Up"), 
 [PSCredential]$domaincreds
 )
@@ -205,15 +205,27 @@ Configuration SingleNodeHCI {
             }
 
             #Configure SAHCI Node (Continued after domain controller deployment)
-            Computer RenameServer{
-                Name="SAHCI"
-                DomainName="Contoso"
-                Credential=$domaincreds
-                DependsOn='[xVMHyperV]ContosoDC_VM'
-             }
+            Computer JoinDomain
+                {
+                    Name       = 'SAHCI'
+                    DomainName = 'Contoso'
+                    Credential = $domaincreds
+                }
 
 
 
         }
 
 }
+
+$Configdata=@{
+    allnodes=@(
+        @{
+            nodename="SingleNodeHCI"
+            PSDSCAllowPlainTextPassword=$true
+            PSDSCAllowDomainUser=$true
+            
+        }
+    )
+    }
+    SingleNodeHCI -ConfigurationData $configdata 
