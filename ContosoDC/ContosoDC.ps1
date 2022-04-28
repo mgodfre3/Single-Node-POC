@@ -1,6 +1,6 @@
 Configuration ContosoDC {
     Param (
-        [string]$DomainName="Contoso",
+        [string]$DomainName="Contoso.com",
         [String]$targetDrive = "C",
         [String]$targetADPath = "$targetDrive" + ":\ADDS",
         [Securestring]$secPassword = (ConvertTo-SecureString "Password01" -AsPlainText -Force),
@@ -19,8 +19,8 @@ Configuration ContosoDC {
     Import-DscResource -ModuleName 'ActiveDirectoryDsc' -ModuleVersion 6.0.1 
 
     Node "ContosoDC" {
-        #$netAdapters = Get-NetAdapter -Name ($ipConfig.InterfaceAlias) | Select-Object -First 1
-        #$InterfaceAlias = $($netAdapters.Name) 
+        $netAdapters = Get-NetAdapter  | Select-Object -First 1
+        $InterfaceAlias = $($netAdapters.Name) 
         
         if ( $domaincreds -eq $null) {
            $domaincreds= New-Object System.Management.Automation.PSCredential ("Contoso\Administrator", $secPassword)

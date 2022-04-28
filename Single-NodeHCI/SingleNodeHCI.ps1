@@ -127,6 +127,12 @@ Configuration SingleNodeHCI {
                 IPAddress      = '192.168.1.1/24'
                 DependsOn      = "[xVMSwitch]InternalSwitch"
             }
+
+            HostsFile HostsFileAddEntry{
+            HostName  = 'Contoso.com'
+            IPAddress = '192.168.1.254'
+            Ensure    = 'Present'
+        }
     <#
             NetIPInterface "Enable IP forwarding on vEthernet $SwitchName"
             {   
