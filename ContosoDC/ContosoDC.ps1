@@ -25,6 +25,26 @@ Configuration ContosoDC {
         if ( $domaincreds -eq $null) {
            $domaincreds= New-Object System.Management.Automation.PSCredential ("Contoso\Administrator", $secPassword)
             }
+            #Set Net Adapter
+            NetIPInterface DisableDhcp{
+                InterfaceAlias = $InterfaceAlias
+                AddressFamily  = 'IPv4'
+                Dhcp           = 'Disabled'
+            }
+
+            IPAddress NewIPv4Address{
+                IPAddress      = '192.168.1.254'
+                InterfaceAlias = 'Ethernet'
+                AddressFamily  = 'IPV4'
+                DependsOn = '[NetIPInterface]DisableDHCP'
+            }
+
+            DefaultGatewayAddress SetDefaultGateway{
+            Address        = '192.168.1.1'
+            InterfaceAlias = 'Ethernet'
+            AddressFamily  = 'IPv4'
+            DependsOn = '[IPAddress]NewIPV4Address'
+        }
 
             #Windows Features
             WindowsFeature DNS { 
