@@ -23,7 +23,7 @@ Configuration SingleNodeHCI {
     Import-DscResource -ModuleName 'NetworkingDSC' -ModuleVersion 8.2.0 
     Import-DscResource -ModuleName ComputerManagementDsc -ModuleVersion 8.5.0
     Import-DscResource -ModuleName xFailOverCluster
-    Import-DscResource -Module ActiveDirectoryDsc
+    Import-DscResource -Module ActiveDirectoryDsc -ModuleVersion 6.0.1
 
 
     
@@ -51,6 +51,11 @@ Configuration SingleNodeHCI {
             Name='Hyper-V-PowerShell'
             IncludeAllSubFeature = $true
             }
+
+            PendingReboot RebootAfterFeatureInstall{
+            Name = 'FeatureInstall'
+            DependsOn = '[WindowsFeature]Hyper-V', '[WindowsFeature]Hyper-V-PowerShell'
+        }
             
             # Directory Requirments
             File "VMfolder" {
@@ -207,6 +212,13 @@ Configuration SingleNodeHCI {
                 State           = 'Running'
             }
             
+            DnsServerAddress DnsServerAddress{
+            Address        = (Get-VMNetadapter -VMName "ContosoDC").IPAddress
+            InterfaceAlias = 'Ethernet'
+            AddressFamily  = 'IPv4'
+            Validate       = $true
+        }
+
             WaitForADDomain 'contoso.com'{
             DomainName = 'contoso.com'
             }
