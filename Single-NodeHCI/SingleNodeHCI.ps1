@@ -4,7 +4,7 @@ Configuration SingleNodeHCI {
     param(
 [String]$targetDrive = "C",
 [String]$targetVMPath = "$targetDrive" + ":\VMs",
-[String]$server2019_uri="https://aka.ms/AAbclsv",
+[String]$server2019_uri="https://aka.ms/AAgscek",
 [String]$wacUri = "https://aka.ms/wacdownload",
 [String]$SwitchName="InternalSwitch",
 [String]$ExtSwitchName="HCI-Uplink",
@@ -104,7 +104,7 @@ Configuration SingleNodeHCI {
                 Ensure                = 'Present'
                 Name                  = $ExtSwitchName
                 Type                  = 'External'
-                NetAdapterName        = "Ethernet 2"
+                NetAdapterName        = "Ethernet *"
                 AllowManagementOS =  $true
                 BandwidthReservationMode = "weight"
                 LoadBalancingAlgorithm = 'Dynamic'
@@ -176,7 +176,7 @@ Configuration SingleNodeHCI {
                     Type            = 'Directory'
                     DestinationPath = "$targetVMPath\ContosoDC\VHD"
                     }
-
+<#
             xVHD ContosoDC {
         
                 Ensure     = 'Present'
@@ -199,9 +199,9 @@ Configuration SingleNodeHCI {
                     }
                 )
             }
-                   
+  #>                 
 
-            # create the testVM out of the vhd.
+            # create the ContosoDC VM out of the vhd.
             
             xVMHyperV ContosoDC_VM{
                 Name            = "ContosoDC"
@@ -214,12 +214,12 @@ Configuration SingleNodeHCI {
                 Generation = 2
                 Path = "$targetVMPath\ContosoDC"
                 RestartIfNeeded = $true
-                DependsOn       = '[xVHD]ContosoDC', '[xVMSwitch]Internalswitch', '[xVhdFile]Copy_ContosoDC-MOF_to_ContosoDC'
+                DependsOn       = '[xVMSwitch]Internalswitch'
                 State           = 'Running'
             }
             
             DnsServerAddress DnsServerAddress{
-            Address        = (Get-VMNetadapter -VMName "ContosoDC").IPAddress
+            Address        = '192.168.1.254'
             InterfaceAlias = 'Ethernet'
             AddressFamily  = 'IPv4'
             Validate       = $true
