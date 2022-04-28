@@ -11,18 +11,27 @@ Install-Module -Name 'NetworkingDSC' -Force
 #>
 
 
+#Paramters
+Write-Verbose "Asking for Domain Credentials to use in new Domain"
+$domaincred=Get-Credential 
 
-$dscuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/Single-NodeHCI.zip?raw=true"
+$dscuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/Single-NodeHCI/SingleNodeHCI.zip?raw=true"
 
 New-item -Path "C:\" -ItemType Directory -Name DSCConfigs
-Invoke-WebRequest -Uri $dscuri -OutFile C:\DSCConfigs\Single-NodeHCI
-Expand-Archive C:\DSCConfigs\Single-NodeHCI.zip -DestinationPath C:\DSCConfigs 
+Invoke-WebRequest -Uri $dscuri -OutFile C:\DSCConfigs\SingleNodeHCI.zip
+Expand-Archive C:\DSCConfigs\SingleNodeHCI.zip -DestinationPath C:\DSCConfigs 
 
 #Copy Modules to C:
+Write-Verbose "Copying Required Modules to Local Powershell Folder"
 
+$modulepath="$env:SystemDrive\Program Files\WindowsPowerShell\Modules"
+Copy-Item C:\DSCConfigs\Modules -Destination $modulepath -Recurse -Force  
 
 #Create MOF
 
+. C:\DSCCOnfigs\SingleNodeHCI.ps1
+Write-Verbose "Compling MOF File"
+SingleNodeHCI -ConfigurationData $configdata 
 
-Start-DscConfiguration -Path C:\DSCConfigs\Single-NodeHCI -Wait -Force 
+Start-DscConfiguration -Path C:\DSCConfigs\DSC\SingleNodeHCI\SingleNodeHCI\ -Wait -Force 
 

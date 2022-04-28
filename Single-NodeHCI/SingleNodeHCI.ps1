@@ -15,7 +15,7 @@ Configuration SingleNodeHCI {
 [PSCredential]$domaincreds
 )
    
-    #Import-DscResource -ModuleName 'PSDesiredStateConfiguration' 
+    Import-DscResource -ModuleName 'PSDesiredStateConfiguration' 
     Import-DscResource -ModuleName 'xPSDesiredStateConfiguration' -ModuleVersion 9.1.0 
     Import-DscResource -ModuleName 'xCredSSP' -ModuleVersion 1.3.0.0 
     Import-DscResource -ModuleName 'DSCR_Shortcut' -ModuleVersion 2.2.0
@@ -23,6 +23,7 @@ Configuration SingleNodeHCI {
     Import-DscResource -ModuleName 'NetworkingDSC' -ModuleVersion 8.2.0 
     Import-DscResource -ModuleName ComputerManagementDsc -ModuleVersion 8.5.0
     Import-DscResource -ModuleName xFailOverCluster
+    Import-DscResource -Module ActiveDirectoryDsc
 
 
     
@@ -76,13 +77,13 @@ Configuration SingleNodeHCI {
                 DependsOn="[File]Temp"
             }
 
-        if (get-childitem "$env:SystemDrive\HCIVHDs\GUI.vhdx" -eq $null) {
+        <#
             xRemoteFile "Server2019VHD"{
                 uri=$server2019_uri
                 DestinationPath="$env:SystemDrive\HCIVHDs\GUI.vhdx"
                 DependsOn="[File]HCIVHDs"
             }
-        }
+        #>
         
             Archive "ContosoDC-MOF" {
                 Path="$env:SystemDrive\temp\ContosoDC.zip"
@@ -98,8 +99,7 @@ Configuration SingleNodeHCI {
                 Ensure                = 'Present'
                 Name                  = $ExtSwitchName
                 Type                  = 'External'
-                NetAdapterName        = "$Netadapters"
-                EnableEmbeddedTeaming = $true
+                NetAdapterName        = "Ethernet 2"
                 AllowManagementOS =  $true
                 BandwidthReservationMode = "weight"
                 LoadBalancingAlgorithm = 'Dynamic'
@@ -122,7 +122,7 @@ Configuration SingleNodeHCI {
                 IPAddress      = '192.168.1.1/24'
                 DependsOn      = "[xVMSwitch]InternalSwitch"
             }
-
+    <#
             NetIPInterface "Enable IP forwarding on vEthernet $SwitchName"
             {   
                 AddressFamily  = 'IPv4'
@@ -130,7 +130,7 @@ Configuration SingleNodeHCI {
                 Forwarding     = 'Enabled'
                 DependsOn      = "[IPAddress]New IP for vEthernet $SwitchName"
             }
-
+        #>
             <#
             script NAT {
                 GetScript  = {
@@ -178,7 +178,7 @@ Configuration SingleNodeHCI {
             }
 
             xVhdFile "Copy_ContosoDC-MOF_to_ContosoDC"{
-                VhdPath =  "$targetVMPath\ContosoDC\VHD\ContosoDC-OS.vhdx"
+                VhdPath =  "$env:SystemDrive\VMs\ContosoDC\VHD\ContosoDC-OS.vhdx"
                 FileDirectory =  @(
             
                     # Pending.mof
@@ -192,8 +192,7 @@ Configuration SingleNodeHCI {
 
             # create the testVM out of the vhd.
             
-            xVMHyperV ContosoDC_VM
-            {
+            xVMHyperV ContosoDC_VM{
                 Name            = "ContosoDC"
                 SwitchName      = $SwitchName
                 VhdPath         = "$targetVMPath\ContosoDC\VHD\ContosoDC-OS.vhdx"
@@ -205,17 +204,22 @@ Configuration SingleNodeHCI {
                 Path = "$targetVMPath\ContosoDC"
                 RestartIfNeeded = $true
                 DependsOn       = '[xVHD]ContosoDC', '[xVMSwitch]Internalswitch', '[xVhdFile]Copy_ContosoDC-MOF_to_ContosoDC'
-                State           = 'Off'
+                State           = 'Running'
             }
             
-                #Configure SAHCI Node (Continued after domain controller deployment)
+            WaitForADDomain 'contoso.com'{
+            DomainName = 'contoso.com'
+            }
+  <#          
+            #Configure SAHCI Node (Continued after domain controller deployment)
             Computer JoinDomain
                     {
                         Name       = 'SAHCI'
                         DomainName = 'Contoso'
                         Credential = $domaincreds
+                        DependsOn = '[WaitForADDomain]Contoso.com'
                     }
-  <#              
+               
             xCluster CreateCluster{
                 Name                          = 'SAHCICL'
             #   StaticIPAddress               = '192.168.100.20/24'
