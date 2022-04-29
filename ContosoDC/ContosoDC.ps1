@@ -3,8 +3,9 @@ Configuration ContosoDC {
         [string]$DomainName="Contoso.com",
         [String]$targetDrive = "C",
         [String]$targetADPath = "$targetDrive" + ":\ADDS",
-        [Securestring]$secPassword = (ConvertTo-SecureString "Password01" -AsPlainText -Force),
+        [Securestring]$secPassword = (ConvertTo-SecureString "Password01" -AsPlainText -Force), 
         [PSCredential]$domaincreds
+        
     )
 
     #Import-DscResource -ModuleName 'PSDesiredStateConfiguration'
@@ -19,29 +20,29 @@ Configuration ContosoDC {
     Import-DscResource -ModuleName 'ActiveDirectoryDsc' -ModuleVersion 6.0.1 
 
     Node "ContosoDC" {
-        $netAdapters = Get-NetAdapter  | Select-Object -First 1
-        $InterfaceAlias = $($netAdapters.Name) 
+        [String]$netAdapters = (get-netadapter | Where-Object {$_.name -NotLike "vEthernet*" -and $_.status -eq "Up"})
         
         if ( $domaincreds -eq $null) {
            $domaincreds= New-Object System.Management.Automation.PSCredential ("Contoso\Administrator", $secPassword)
             }
             #Set Net Adapter
+            
             NetIPInterface DisableDhcp{
-                InterfaceAlias = $InterfaceAlias
+                InterfaceAlias = $netAdapters.InterfaceAlias
                 AddressFamily  = 'IPv4'
                 Dhcp           = 'Disabled'
             }
-
+            
             IPAddress NewIPv4Address{
                 IPAddress      = '192.168.1.254'
-                InterfaceAlias = 'Ethernet'
+                InterfaceAlias = $netAdapters.InterfaceAlias
                 AddressFamily  = 'IPV4'
                 DependsOn = '[NetIPInterface]DisableDHCP'
             }
 
             DefaultGatewayAddress SetDefaultGateway{
             Address        = '192.168.1.1'
-            InterfaceAlias = 'Ethernet'
+            InterfaceAlias = $netAdapters.InterfaceAlias 
             AddressFamily  = 'IPv4'
             DependsOn = '[IPAddress]NewIPV4Address'
         }
@@ -49,7 +50,7 @@ Configuration ContosoDC {
             #Windows Features
             WindowsFeature DNS { 
                 Ensure = "Present" 
-                Name   = "DNS"		
+                Name   = "DNS"	   	
             }
 
             Script EnableDNSDiags {
@@ -71,7 +72,7 @@ Configuration ContosoDC {
             DnsServerAddress "DnsServerAddress for ContosoDC"
             { 
                 Address        = '127.0.0.1'
-                InterfaceAlias = "Ethernet"
+                InterfaceAlias = $netAdapters.InterfaceAlias
                 AddressFamily  = 'IPv4'
                 DependsOn      = "[WindowsFeature]DNS"
             }

@@ -11,7 +11,7 @@ Configuration SingleNodeHCI {
 [String]$vhdPath = 'C:\temp\disk.vhdx',
 [String]$relativeDestinationPath = '$env:SystemDrive\Windows\System32\Configuration\Pending.mof',
 [String]$dcmofuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/ContosoDC/ContosoDC.zip?raw=true",
-[String]$netAdapters = (Get-Netadapter | Where-Object status -eq "Up"), 
+[String]$netAdapters = (get-netadapter | Where-Object {$_.name -NotLike "vEthernet*" -and $_.status -eq "Up"}), 
 [PSCredential]$domaincreds
 )
    
@@ -104,10 +104,10 @@ Configuration SingleNodeHCI {
                 Ensure                = 'Present'
                 Name                  = $ExtSwitchName
                 Type                  = 'External'
-                NetAdapterName        = "Ethernet *"
+                NetAdapterName        =  $Netadapters.name
                 AllowManagementOS =  $true
                 BandwidthReservationMode = "weight"
-                LoadBalancingAlgorithm = 'Dynamic'
+                LoadBalancingAlgorithm = 'Dynamic' 
                 DependsOn      = '[WindowsFeature]Hyper-V'
             }
 
@@ -220,7 +220,7 @@ Configuration SingleNodeHCI {
             
             DnsServerAddress DnsServerAddress{
             Address        = '192.168.1.254'
-            InterfaceAlias = 'Ethernet'
+            InterfaceAlias = $Netadapters
             AddressFamily  = 'IPv4'
             Validate       = $true
         }
