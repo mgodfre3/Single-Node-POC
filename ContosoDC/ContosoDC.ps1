@@ -47,6 +47,11 @@ Configuration ContosoDC {
             DependsOn = '[IPAddress]NewIPV4Address'
         }
 
+            Computer Rename{
+                Name = 'ContosoDC'
+            }
+
+
             #Windows Features
             WindowsFeature DNS { 
                 Ensure = "Present" 

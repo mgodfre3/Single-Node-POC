@@ -19,7 +19,7 @@ $dscuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/Single-NodeHCI/Si
 
 New-item -Path "C:\" -ItemType Directory -Name DSCConfigs
 Invoke-WebRequest -Uri $dscuri -OutFile C:\DSCConfigs\SingleNodeHCI.zip
-Expand-Archive C:\DSCConfigs\SingleNodeHCI.zip -DestinationPath C:\DSCConfigs 
+Expand-Archive C:\DSCConfigs\SingleNodeHCI.zip -DestinationPath C:\DSCConfigs -Force 
 
 #Copy Modules to C:
 Write-Verbose "Copying Required Modules to Local Powershell Folder"
@@ -28,10 +28,20 @@ $modulepath="$env:SystemDrive\Program Files\WindowsPowerShell\Modules"
 Copy-Item C:\DSCConfigs\Modules -Destination $modulepath -Recurse -Force  
 
 Install-WindowsFeature Hyper-V-Powershell
+Install-WindowsFeature Hyper-V-Tools
 Install-WindowsFeature Hyper-V -Restart 
 
 
 $server2019_uri="https://aka.ms/AAgscek"
+New-Item -Path C:\ -Name HCIVHDs -ItemType Directory
+$testpath=(Test-Path "C:\hcivms\Gui.vhdx")
+if ($testpath -eq $null){
+Invoke-webrequest -URI $server2019_uri -OutFile C:\HCIVHDs\GUI.vhdx
+}
+
+else {Write-Verbose "The Sysprepd Server VHD already exists"
+}
+
 New-Item -Path C:\ -Name VMS\ContosoDC\VHD -ItemType Directory
 New-VHD -Path C:\vms\ContosoDC\vhd\ContosoDC-OS.vhdx -ParentPath C:\HCIVHDs\GUI.vhdx  -Differencing
 
@@ -41,8 +51,9 @@ Get-Volume | Where-Object {$_.size -gt 90GB -and $_.DriveLetter -eq $null} | Get
 $dcmofuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/ContosoDC/ContosoDC.zip?raw=true"
 New-Item -Name Temp -Path C:\ -ItemType Directory
 Invoke-WebRequest -Uri $dcmofuri -OutFile c:\temp\ContosoDC.zip
-Expand-Archive C:\temp\ContosoDC.zip -DestinationPath C:\temp
+Expand-Archive C:\temp\ContosoDC.zip -DestinationPath C:\temp -Force
 Copy-item C:\Temp\ContosoDC.mof -Destination "v:\Windows\System32\Configuration\pending.mof"
+Get-ChildItem C:\temp\Modules | Copy-item  -Destination "V:\Program Files\WindowsPowerShell\Modules" -Force -Recurse
 Dismount-vhd C:\vms\ContosoDC\vhd\ContosoDC-OS.vhdx
 
 

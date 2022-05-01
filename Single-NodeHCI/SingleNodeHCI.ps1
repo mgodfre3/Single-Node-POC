@@ -34,6 +34,7 @@ Configuration SingleNodeHCI {
             ActionAfterReboot  = 'ContinueConfiguration'
             ConfigurationMode = 'ApplyAndMonitor'
             RefreshMode = 'Push'
+
              }
 
            
@@ -105,6 +106,7 @@ Configuration SingleNodeHCI {
                 Name                  = $ExtSwitchName
                 Type                  = 'External'
                 NetAdapterName        =  $Netadapters.name
+                EnableEmbeddedTeaming =  $true
                 AllowManagementOS =  $true
                 BandwidthReservationMode = "weight"
                 LoadBalancingAlgorithm = 'Dynamic' 
@@ -220,7 +222,7 @@ Configuration SingleNodeHCI {
             
             DnsServerAddress DnsServerAddress{
             Address        = '192.168.1.254'
-            InterfaceAlias = $Netadapters
+            InterfaceAlias = "vEthernet (HCI-Uplink)" 
             AddressFamily  = 'IPv4'
             Validate       = $true
         }
@@ -228,7 +230,7 @@ Configuration SingleNodeHCI {
             WaitForADDomain 'contoso.com'{
             DomainName = 'contoso.com'
             }
-  <#          
+           
             #Configure SAHCI Node (Continued after domain controller deployment)
             Computer JoinDomain
                     {
@@ -240,7 +242,7 @@ Configuration SingleNodeHCI {
                
             xCluster CreateCluster{
                 Name                          = 'SAHCICL'
-            #   StaticIPAddress               = '192.168.100.20/24'
+            #    StaticIPAddress               = '192.168.100.20/24'
                 DomainAdministratorCredential = $domaincreds
                 DependsOn                     = '[Computer]JoinDomain'
                 }
@@ -252,7 +254,7 @@ Configuration SingleNodeHCI {
                     RetryCount       = 60
                     DependsOn        = '[xCluster]CreateCluster'
                 }
-#>
+
                 
 
 
