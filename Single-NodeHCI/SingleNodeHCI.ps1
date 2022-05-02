@@ -32,7 +32,7 @@ Configuration SingleNodeHCI {
             LocalConfigurationManager {
             RebootNodeIfNeeded = $true
             ActionAfterReboot  = 'ContinueConfiguration'
-            ConfigurationMode = 'ApplyAndMonitor'
+            ConfigurationMode = 'ApplyAndAutoCorrect'
             RefreshMode = 'Push'
 
              }
@@ -105,7 +105,7 @@ Configuration SingleNodeHCI {
                 Ensure                = 'Present'
                 Name                  = $ExtSwitchName
                 Type                  = 'External'
-                NetAdapterName        =  $Netadapters.name
+                NetAdapterName        =  "Ethernet"
                 EnableEmbeddedTeaming =  $true
                 AllowManagementOS =  $true
                 BandwidthReservationMode = "weight"
@@ -204,7 +204,6 @@ Configuration SingleNodeHCI {
   #>                 
 
             # create the ContosoDC VM out of the vhd.
-            
             xVMHyperV ContosoDC_VM{
                 Name            = "ContosoDC"
                 SwitchName      = $SwitchName
@@ -218,6 +217,23 @@ Configuration SingleNodeHCI {
                 RestartIfNeeded = $true
                 DependsOn       = '[xVMSwitch]Internalswitch'
                 State           = 'Running'
+            }
+
+            xVMNetworkAdapter ContosoDC-VNic{
+                Ensure = 'Present'
+                Id = 'ContosoDC-VNic'
+                Name = 'Ethernet'
+                SwitchName = 'HCI-Uplink'
+                MacAddress = '001523be0c00'
+                VMName = 'ContosoDC'
+                DependsOn = '[xVMHyperV]ContosoDC_VM'
+                NetworkSetting = xNetworkSettings
+                {
+                    IpAddress = '192.168.1.154'
+                    Subnet = '255.255.255.-'
+                    DefaultGateway = '192.168.1.1'
+                    DnsServer = '127.0.0.1'
+                }
             }
             
             DnsServerAddress DnsServerAddress{
