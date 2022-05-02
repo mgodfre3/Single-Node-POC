@@ -235,6 +235,15 @@ Configuration SingleNodeHCI {
                     DnsServer = '127.0.0.1'
                 }
             }
+
+            xVMNetworkAdapter DefaultVNic {
+                Id = 'DefaultVNic'
+                Name = 'Network Adapter'
+                SwitchName = 'InternalSwitch'
+                VMName = 'ContosoDC'
+                Ensure = 'Absent'
+                DependsOn = '[xVMHyperV]ContosoDC_VM'
+            }
             
             DnsServerAddress DnsServerAddress{
             Address        = '192.168.1.254'
