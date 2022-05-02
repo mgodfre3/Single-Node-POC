@@ -223,7 +223,7 @@ Configuration SingleNodeHCI {
                 Ensure = 'Present'
                 Id = 'ContosoDC-VNic'
                 Name = 'Ethernet'
-                SwitchName = 'HCI-Uplink'
+                SwitchName = 'InternalSwitch'
                 MacAddress = '001523be0c00'
                 VMName = 'ContosoDC'
                 DependsOn = '[xVMHyperV]ContosoDC_VM'
@@ -242,7 +242,7 @@ Configuration SingleNodeHCI {
             AddressFamily  = 'IPv4'
             Validate       = $true
         }
-
+        <#
             WaitForADDomain 'contoso.com'{
             DomainName = 'contoso.com'
             }
@@ -258,9 +258,9 @@ Configuration SingleNodeHCI {
                
             xCluster CreateCluster{
                 Name                          = 'SAHCICL'
-            #    StaticIPAddress               = '192.168.100.20/24'
+                StaticIPAddress               = '192.168.100.254/24'
                 DomainAdministratorCredential = $domaincreds
-                DependsOn                     = '[Computer]JoinDomain'
+                #DependsOn                     = '[Computer]JoinDomain'
                 }
                 
             xWaitForCluster WaitForCluster
@@ -270,7 +270,7 @@ Configuration SingleNodeHCI {
                     RetryCount       = 60
                     DependsOn        = '[xCluster]CreateCluster'
                 }
-
+                #>
                 
 
 
