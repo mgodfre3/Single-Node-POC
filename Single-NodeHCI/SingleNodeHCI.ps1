@@ -11,6 +11,7 @@ Configuration SingleNodeHCI {
 [String]$vhdPath = 'C:\temp\disk.vhdx',
 [String]$relativeDestinationPath = '$env:SystemDrive\Windows\System32\Configuration\Pending.mof',
 [String]$dcmofuri="https://github.com/mgodfre3/Single-Node-POC/blob/main/ContosoDC/ContosoDC.zip?raw=true",
+[String]$dcvhdpath="https://ashcisandbox.blob.core.windows.net/vhd/ContosoDC.vhdx",
 [String]$netAdapters = (get-netadapter | Where-Object {$_.name -NotLike "vEthernet*" -and $_.status -eq "Up"}), 
 [PSCredential]$domaincreds
 )
@@ -83,13 +84,13 @@ Configuration SingleNodeHCI {
                 DependsOn="[File]Temp"
             }
 
-        <#
-            xRemoteFile "Server2019VHD"{
-                uri=$server2019_uri
-                DestinationPath="$env:SystemDrive\HCIVHDs\GUI.vhdx"
+        
+            xRemoteFile "DCVHD"{
+                uri=$dcvhdpath 
+                DestinationPath="$env:SystemDrive\HCIVHDs\ContosoDC.vhdx"
                 DependsOn="[File]HCIVHDs"
             }
-        #>
+        
         
             Archive "ContosoDC-MOF" {
                 Path="$env:SystemDrive\temp\ContosoDC.zip"
@@ -178,14 +179,14 @@ Configuration SingleNodeHCI {
                     Type            = 'Directory'
                     DestinationPath = "$targetVMPath\ContosoDC\VHD"
                     }
-<#
+
             xVHD ContosoDC {
         
                 Ensure     = 'Present'
                 Name       = "ContosoDC-OS.vhdx"
                 Path       = "$targetVMPath\ContosoDC\VHD\"
                 Generation = 'vhdx'
-                ParentPath = "$env:SystemDrive\HCIVHDs\GUI.vhdx"
+                ParentPath = "$env:SystemDrive\HCIVHDs\ContosoDC.vhdx"
                 Type = 'Differencing'
                 MaximumSizeBytes = "40096"
             }
@@ -218,7 +219,7 @@ Configuration SingleNodeHCI {
                 DependsOn       = '[xVMSwitch]Internalswitch'
                 State           = 'Running'
             }
-
+<#
             xVMNetworkAdapter ContosoDC-VNic{
                 Ensure = 'Present'
                 Id = 'ContosoDC-VNic'
@@ -244,14 +245,14 @@ Configuration SingleNodeHCI {
                 Ensure = 'Absent'
                 DependsOn = '[xVMHyperV]ContosoDC_VM'
             }
-            
+  #>          
             DnsServerAddress DnsServerAddress{
             Address        = '192.168.1.254'
             InterfaceAlias = "vEthernet (HCI-Uplink)" 
             AddressFamily  = 'IPv4'
             Validate       = $true
         }
-        <#
+        
             WaitForADDomain 'contoso.com'{
             DomainName = 'contoso.com'
             }
@@ -278,8 +279,9 @@ Configuration SingleNodeHCI {
                     RetryIntervalSec = 10
                     RetryCount       = 60
                     DependsOn        = '[xCluster]CreateCluster'
+                
                 }
-                #>
+                
                 
 
 
