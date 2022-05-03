@@ -4,8 +4,8 @@ $HCINNodeName="SAHCI"
 $Clustername="SAHCICL"
 $DNSIp="10.50.10.1"
 $clusterIP="10.50.10.203"
-$Volume1Size="10GB" #Please put in GB
-$AZSubscriptionIS="a2899dc7-f46b-4ba8-a492-1b957352eefd"
+
+$AZSubscriptionIS=""
 
 
 
@@ -18,7 +18,7 @@ Invoke-Command -ComputerName $HCINode -Credential $localcreds -ScriptBlock {
     New-Cluster -Name SAHCICL -StaticAddress $using:clusterIP -AdministrativeAccessPoint dns -NoStorage
     Enable-ClusterS2D -PoolFriendlyName "SAHCICL Storage Pool"
     $sp=Get-StoragePool | Where-Object friendlyname -ne "Primordial" 
-    New-Volume -FriendlyName "Volume 1" -StoragePoolFriendlyName $sp.FriendlyName -FileSystem CSVFS_ReFS -ResiliencySettingName Simple -Size $using:volume1size
+    New-Volume -FriendlyName "Volume 1" -StoragePoolFriendlyName $sp.FriendlyName -FileSystem CSVFS_ReFS -ResiliencySettingName Simple -Size 10GB
     
     
     
