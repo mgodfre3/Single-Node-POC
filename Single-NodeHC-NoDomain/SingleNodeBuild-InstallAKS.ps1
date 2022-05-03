@@ -85,7 +85,10 @@ $LocalCreds=Get-Credential -UserName "SAHCI\Administrator" -Message "Local Crede
     
         $vnet = New-AksHciNetworkSetting -name $using:aksvar.AKSvnetname -vSwitchName $using:aksvar.AKSvSwitchName -k8sNodeIpPoolStart $using:aksvar.AKSNodeStartIP -k8sNodeIpPoolEnd $using:aksvar.AKSNodeEndIP -vipPoolStart $using:aksvar.AKSVIPStartIP -vipPoolEnd $using:aksvar.AKSVIPEndIP -ipAddressPrefix $using:aksvar.AKSIPPrefix -gateway $using:aksvar.AKSGWIP -dnsServers $using:aksvar.AKSDNSIP -vlanID $aksvar.vlanid        
         Set-AksHciConfig -imageDir $using:aksvar.AKSImagedir -workingDir $using:aksvar.AKSWorkingdir -cloudConfigLocation $using:aksvar.AKSCloudConfigdir -vnet $vnet -cloudservicecidr $using:aksvar.AKSCloudSvcidr -clusterRoleName $aksvar.AKSCloudAgentName
-        Set-MocConfigValue -Name "cloudFqdn" -value "ca-cloudagent.mycloudacademy.org"
+        $cloudFqdnIP = $AKSCloudSvcidr.Substring(0,($AKSCloudSvcidr.IndexOf("/")))
+        Set-MocConfigValue -Name "cloudFqdn" -value "$cloudFqdnIP"
+        $hostsEntry = "$cloudFqdnIP $AKSCloudAgentName"
+        Out-File -FilePath C:\Windows\system32\drivers\etc\hosts -Append -Encoding utf8 -InputObject $hostsEntry
         $azurecred=Connect-AzAccount -UseDeviceAuthentication
         $armtoken = Get-AzAccessToken
         $graphtoken = Get-AzAccessToken -ResourceTypeName AadGraph
