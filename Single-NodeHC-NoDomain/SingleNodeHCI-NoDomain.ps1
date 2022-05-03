@@ -46,7 +46,7 @@ Configuration SingleNodeHCI-NoDomain {
             
             WindowsFeature Failover-Cluster {
                 Ensure = 'Present'
-                Name = "HFailover-Clustering"
+                Name = "Failover-Clustering"
                 IncludeAllSubFeature = $true 
                 
                 }
@@ -85,7 +85,7 @@ Configuration SingleNodeHCI-NoDomain {
                 Ensure                = 'Present'
                 Name                  = $ExtSwitchName
                 Type                  = 'External'
-                NetAdapterName        =  "Ethernet"
+                NetAdapterName        =  $netAdapters.name
                 EnableEmbeddedTeaming =  $true
                 AllowManagementOS =  $true
                 BandwidthReservationMode = "weight"
