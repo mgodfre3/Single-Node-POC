@@ -1052,7 +1052,7 @@ param(
             }
             else
             {
-                $nodeSession = New-PSSession -ComputerName ($clusNode.Name + "." + $ClusterDNSSuffix) -Credential $Credential
+                $nodeSession = New-PSSession -Credential $Credential
             }
 
             # Check if node can reach cloud billing service
@@ -1108,7 +1108,7 @@ param(
             }
             else
             {
-                $nodeSession = New-PSSession -ComputerName ($clusNode.Name + "." + $ClusterDNSSuffix) -Credential $Credential
+                $nodeSession = New-PSSession -Credential $Credential
             }
         }
         catch
@@ -1340,7 +1340,7 @@ param(
     }
     else
     {
-        $clusterNodeSessions = New-PSSession -ComputerName $clusterNodeNames -Credential $Credential
+        $clusterNodeSessions = New-PSSession -Credential $Credential
     }
 
     $retStatus = [ErrorDetail]::Success
@@ -1422,7 +1422,7 @@ param(
     }
     else
     {
-        $clusterNodeSessions = New-PSSession -ComputerName $clusterNodeNames -Credential $Credential
+        $clusterNodeSessions = New-PSSession -Credential $Credential
     }
 
     $nodeArcStatus = Invoke-Command -Session $Session -ScriptBlock { $(Get-AzureStackHCIArcIntegration)}
@@ -2421,7 +2421,7 @@ param(
                     }
                     else
                     {
-                        $nodeSession = New-PSSession -ComputerName ($clusNode.Name + "." + $clusterDNSSuffix) -Credential $Credential
+                        $nodeSession = New-PSSession -Credential $Credential
                     }
                 }
                 catch
@@ -2778,7 +2778,7 @@ param(
                         }
                         else
                         {
-                            $nodeSession = New-PSSession -ComputerName ($clusNode.Name + "." + $clusterDNSSuffix) -Credential $Credential
+                            $nodeSession = New-PSSession -Credential $Credential
                         }
 
                         if([Environment]::MachineName -eq $clusNode.Name)
