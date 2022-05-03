@@ -137,4 +137,4 @@ $Configdata=@{
         }
     )
     }
-    SingleNodeHCI -ConfigurationData $configdata 
+    SingleNodeHCI-NoDomain -ConfigurationData $configdata 
