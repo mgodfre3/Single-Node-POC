@@ -48,6 +48,14 @@ Configuration SingleNodeHCI {
             
             }
             
+            WindowsFeature Failover-Cluster {
+                Ensure = 'Present'
+                Name = "HFailover-Clustering"
+                IncludeAllSubFeature = $true 
+                
+                }
+                
+
             WindowsFeature Hyper-V-PowerShell{
             Ensure = 'Present'
             Name='Hyper-V-PowerShell'
@@ -190,7 +198,7 @@ Configuration SingleNodeHCI {
                 Type = 'Differencing'
                 MaximumSizeBytes = "40096"
             }
-
+        <#
             xVhdFile "Copy_ContosoDC-MOF_to_ContosoDC"{
                 VhdPath =  "$env:SystemDrive\VMs\ContosoDC\VHD\ContosoDC-OS.vhdx"
                 FileDirectory =  @(
@@ -202,7 +210,7 @@ Configuration SingleNodeHCI {
                     }
                 )
             }
-  #>                 
+            #>                 
 
             # create the ContosoDC VM out of the vhd.
             xVMHyperV ContosoDC_VM{
@@ -231,7 +239,7 @@ Configuration SingleNodeHCI {
                 NetworkSetting = xNetworkSettings
                 {
                     IpAddress = '192.168.1.154'
-                    Subnet = '255.255.255.-'
+                    Subnet = '255.255.255.0'
                     DefaultGateway = '192.168.1.1'
                     DnsServer = '127.0.0.1'
                 }
@@ -270,7 +278,7 @@ Configuration SingleNodeHCI {
                 Name                          = 'SAHCICL'
                 StaticIPAddress               = '192.168.100.254/24'
                 DomainAdministratorCredential = $domaincreds
-                #DependsOn                     = '[Computer]JoinDomain'
+                DependsOn                     = '[Computer]JoinDomain', '[WindowsFeature]Failover-Cluster'
                 }
                 
             xWaitForCluster WaitForCluster
