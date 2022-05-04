@@ -50,7 +50,7 @@ Configuration SingleNodeHCI {
             
             WindowsFeature Failover-Cluster {
                 Ensure = 'Present'
-                Name = "HFailover-Clustering"
+                Name = "Failover-Clustering"
                 IncludeAllSubFeature = $true 
                 
                 }
@@ -144,7 +144,7 @@ Configuration SingleNodeHCI {
             IPAddress = '192.168.1.254'
             Ensure    = 'Present'
         }
-    <#
+    
             NetIPInterface "Enable IP forwarding on vEthernet $SwitchName"
             {   
                 AddressFamily  = 'IPv4'
@@ -152,8 +152,8 @@ Configuration SingleNodeHCI {
                 Forwarding     = 'Enabled'
                 DependsOn      = "[IPAddress]New IP for vEthernet $SwitchName"
             }
-        #>
-            <#
+        
+            
             script NAT {
                 GetScript  = {
                     $nat = "AzSHCINAT"
@@ -173,7 +173,7 @@ Configuration SingleNodeHCI {
                 }
                 DependsOn  = "[IPAddress]New IP for vEthernet $SwitchName"
             }
-            #>
+            
 
             #Domain Controller Virtual Machine
             #OS VHD
