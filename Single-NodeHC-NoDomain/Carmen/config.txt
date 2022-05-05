@@ -1,0 +1,13 @@
+HciNodeName = ryzen1node
+ClusterIP = 172.16.99.1
+CidrSubnet = 172.16.0.0/24
+AzSubscription = 03d13178-3e31-454d-9bdd-9e93bc53828a
+
+# NOTE: Not all regions support Azure Stack HCI and AKS-HCI. Check for valid regions before modifying.
+AzRegion = EastUS
+
+AksNodeIpPoolStart =   172.16.99.10
+AksNodeIpPoolEnd   =   172.16.99.30
+AksVipPoolStart    =   172.16.99.100
+AksVipPoolEnd      =   172.16.99.120
+AksCloudIpCidr     =   172.16.99.2/16
