@@ -52,7 +52,7 @@ write-host -ForegroundColor Green -Object "Register the Cluster to Azure Subscri
                 Install-Module -Name $ModuleName -Force
             }
         }
-
+    }
         #Register the Cluster
         Login-AZAccount -UseDeviceAuthentication 
         $context=Get-AZContext
@@ -60,4 +60,4 @@ write-host -ForegroundColor Green -Object "Register the Cluster to Azure Subscri
 
 
     
-
+    
