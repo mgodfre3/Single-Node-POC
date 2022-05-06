@@ -42,7 +42,7 @@ $LocalCreds=Get-Credential -UserName "SAHCI\Administrator" -Message "Local Crede
         }
 
     #location (all locations where HostPool can be created)
-        $region=(Get-AzLocation | Where-Object Providers -Contains "Microsoft.DesktopVirtualization"
+        $region=(Get-AzLocation | Where-Object Providers -Contains "Microsoft.DesktopVirtualization")
 
 
 
