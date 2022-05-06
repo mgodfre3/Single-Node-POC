@@ -17,9 +17,9 @@ Invoke-Command -ComputerName $HCINode -Credential $localcreds -ScriptBlock {
     $vnetadapter=Get-Netadapter |  Where-Object {$_.name -Like "vEthernet*" -and $_.status -eq "Up"}
     Set-DnsClientServerAddress -InterfaceAlias $vnetadapter.InterfaceAlias -ServerAddresses $using:dnsip 
     New-Cluster -Name SAHCICL -StaticAddress $using:clusterIP -AdministrativeAccessPoint dns -NoStorage
-    Enable-ClusterS2D -PoolFriendlyName $SPFName -Confirm:$false
-    Set-StoragePool -FriendlyName $SPFName -FaultDomainAwarenessDefault 'PhysicalDisk'
-    New-Volume -StoragePoolFriendlyName $SPFName -FriendlyName "Volume01" -FileSystem CSVFS_ReFS `
+    Enable-ClusterS2D -PoolFriendlyName $Using:SPFName -Confirm:$false
+    Set-StoragePool -FriendlyName $Using:SPFName -FaultDomainAwarenessDefault 'PhysicalDisk'
+    New-Volume -StoragePoolFriendlyName $Using:SPFName -FriendlyName "Volume01" -FileSystem CSVFS_ReFS `
      -ResiliencySettingName Simple -UseMaximumSize
     
     }
@@ -56,7 +56,7 @@ write-host -ForegroundColor Green -Object "Register the Cluster to Azure Subscri
         #Register the Cluster
         Login-AZAccount -UseDeviceAuthentication 
         $context=Get-AZContext
-        Register-AzStackHCI -SubscriptionId $context.Subscription.Id -EnableAzureArcServer -Region "EastUS" -ResourceName $using:clustername -UseDeviceAuthentication
+        Register-AzStackHCI -SubscriptionId $context.Subscription.Id -EnableAzureArcServer -Region "EastUS" -ResourceName $Clustername -UseDeviceAuthentication
 
 
     
