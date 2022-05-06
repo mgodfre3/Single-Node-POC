@@ -56,7 +56,7 @@ write-host -ForegroundColor Green -Object "Register the Cluster to Azure Subscri
         #Register the Cluster
         Login-AZAccount -UseDeviceAuthentication 
         $context=Get-AZContext
-        Register-AzStackHCI -SubscriptionId $context.Subscription.Id -EnableAzureArcServer -Region "EastUS" -ResourceName $using:clustername -UseDeviceAuthentication
+        Register-AzStackHCI -SubscriptionId $context.Subscription.Id -EnableAzureArcServer -Region "EastUS" -ResourceName $Clustername -UseDeviceAuthentication
 
 
     
